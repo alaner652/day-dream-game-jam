@@ -29,6 +29,12 @@ public class PlayerManger : MonoBehaviour
     [Header("地面檢測")]
     public string groundTag = "Ground";
 
+    [Header("死亡設定")]
+    [Tooltip("死亡區域標籤")]
+    public string deathTag = "DeathZone";
+    [Tooltip("敵人標籤")]
+    public string enemyTag = "Enemy";
+
     private Rigidbody2D rb;
     private Animator animator;
     private bool isGrounded;
@@ -44,11 +50,14 @@ public class PlayerManger : MonoBehaviour
     private int wallJumpCount;
     private bool canWallJump;
 
+    private bool isDead = false;
+
     public enum PlayerState
     {
         Idle,
         Walk,
-        Jump
+        Jump,
+        Dead
     }
 
     private PlayerState currentState = PlayerState.Idle;
@@ -58,6 +67,16 @@ public class PlayerManger : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
         rb.freezeRotation = true;
+
+        // 確保初始狀態正確
+        isDead = false;
+        currentState = PlayerState.Idle;
+        isGrounded = false;
+
+        // 重置計時器
+        coyoteTimeCounter = 0f;
+        jumpBufferCounter = 0f;
+        jumpCooldownTimer = 0f;
     }
 
     void Update()
@@ -71,8 +90,6 @@ public class PlayerManger : MonoBehaviour
         HandleMovement();
         UpdateState();
     }
-
-
 
     void HandleCoyoteTime()
     {
@@ -108,6 +125,12 @@ public class PlayerManger : MonoBehaviour
 
     void HandleInput()
     {
+        // 死亡時無法控制
+        if (isDead)
+        {
+            return;
+        }
+
         // 只有在遊戲進行中才能控制
         if (GameManager.Instance != null && !GameManager.Instance.IsGamePlaying())
         {
@@ -122,6 +145,13 @@ public class PlayerManger : MonoBehaviour
 
     void HandleMovement()
     {
+        // 死亡時無法移動
+        if (isDead)
+        {
+            rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+            return;
+        }
+
         // 只有在遊戲進行中才能移動
         if (GameManager.Instance != null && !GameManager.Instance.IsGamePlaying())
         {
@@ -142,8 +172,16 @@ public class PlayerManger : MonoBehaviour
     {
         PlayerState previousState = currentState;
 
+        // 死亡狀態優先
+        if (isDead)
+        {
+            if (currentState != PlayerState.Dead)
+            {
+                currentState = PlayerState.Dead;
+            }
+        }
         // 首先檢查跳躍狀態
-        if (!isGrounded)
+        else if (!isGrounded)
         {
             if (currentState != PlayerState.Jump)
             {
@@ -192,6 +230,9 @@ public class PlayerManger : MonoBehaviour
             case PlayerState.Jump:
                 animator.SetTrigger("isJump");
                 break;
+            case PlayerState.Dead:
+                animator.SetTrigger("isDead");
+                break;
         }
     }
 
@@ -211,6 +252,10 @@ public class PlayerManger : MonoBehaviour
         {
             isGrounded = true;
         }
+        else if (collision.gameObject.CompareTag(deathTag) || collision.gameObject.CompareTag(enemyTag))
+        {
+            Die();
+        }
     }
 
     void OnCollisionExit2D(Collision2D collision)
@@ -219,6 +264,40 @@ public class PlayerManger : MonoBehaviour
         {
             isGrounded = false;
         }
+    }
+
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.CompareTag(deathTag) || other.CompareTag(enemyTag))
+        {
+            Die();
+        }
+    }
+
+    public void Die()
+    {
+        if (isDead) return; // 避免重複死亡
+
+        isDead = true;
+        Debug.Log("玩家死亡！");
+
+        // 通知 GameManager
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.EndGame();
+        }
+    }
+
+    public bool IsDead()
+    {
+        return isDead;
+    }
+
+    public void Respawn()
+    {
+        isDead = false;
+        currentState = PlayerState.Idle;
+        Debug.Log("玩家重生！");
     }
 
 }

@@ -8,6 +8,9 @@ public class GameManager : MonoBehaviour
     [Header("遊戲設定")]
     public bool pauseOnTimeUp = true;
     public bool allowPause = true;
+    public bool autoRestartOnDeath = true;
+    [Tooltip("死亡後自動重新開始的延遲時間")]
+    public float deathRestartDelay = 1f;
 
     // 單例模式
     public static GameManager Instance { get; private set; }
@@ -40,7 +43,8 @@ public class GameManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            // 注意：重新開始時不要保留 GameManager，讓它重新初始化
+            // DontDestroyOnLoad(gameObject);
         }
         else
         {
@@ -53,6 +57,10 @@ public class GameManager : MonoBehaviour
         // 找到其他組件
         gameTimer = FindObjectOfType<GameTimer>();
         player = FindObjectOfType<PlayerManger>();
+
+        // 確保遊戲狀態正確初始化
+        currentGameState = GameState.Playing;
+        Time.timeScale = 1f;
 
         // 開始遊戲
         StartGame();
@@ -122,12 +130,19 @@ public class GameManager : MonoBehaviour
     public void EndGame()
     {
         ChangeGameState(GameState.GameOver);
-        if (pauseOnTimeUp)
+        OnGameEnded?.Invoke();
+        Debug.Log("遊戲結束！");
+
+        // 檢查是否自動重新開始
+        if (autoRestartOnDeath)
+        {
+            Debug.Log($"將在 {deathRestartDelay} 秒後自動重新開始...");
+            Invoke("RestartGame", deathRestartDelay);
+        }
+        else if (pauseOnTimeUp)
         {
             Time.timeScale = 0f;
         }
-        OnGameEnded?.Invoke();
-        Debug.Log("遊戲結束！");
     }
 
     public void Victory()
@@ -139,7 +154,13 @@ public class GameManager : MonoBehaviour
 
     public void RestartGame()
     {
+        Debug.Log("重新載入場景...");
         Time.timeScale = 1f;
+
+        // 取消所有延遲調用
+        CancelInvoke();
+
+        // 重新載入當前場景
         UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
     }
 
