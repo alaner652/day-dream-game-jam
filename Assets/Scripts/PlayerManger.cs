@@ -8,10 +8,41 @@ public class PlayerManger : MonoBehaviour
     public float moveSpeed = 5f;
     public float jumpForce = 5f;
 
+    [Header("跳躍輔助設定")]
+    [Tooltip("土狼時間 - 離開平台後仍可跳躍的時間")]
+    public float coyoteTime = 0.2f;
+    [Tooltip("跳躍緩衝時間 - 提前按跳躍鍵的有效時間")]
+    public float jumpBufferTime = 0.2f;
+    [Tooltip("跳躍冷卻時間")]
+    public float jumpCooldown = 1f;
+    [Tooltip("地面檢測距離")]
+    public float groundCheckDistance = 0.1f;
+    [Tooltip("地面檢測寬度（用於邊緣容錯）")]
+    public float groundCheckWidth = 0.8f;
+
+    [Header("牆跳設定")]
+    [Tooltip("牆跳最大次數")]
+    public int maxWallJumps = 3;
+    [Tooltip("牆跳力度")]
+    public float wallJumpForce = 4f;
+
+    [Header("地面檢測")]
+    public string groundTag = "Ground";
+
     private Rigidbody2D rb;
     private Animator animator;
     private bool isGrounded;
+    private bool wasGrounded;
     private float horizontalInput;
+
+    private float coyoteTimeCounter;
+    private float jumpBufferCounter;
+    private float jumpCooldownTimer;
+
+    private bool isTouchingWallLeft;
+    private bool isTouchingWallRight;
+    private int wallJumpCount;
+    private bool canWallJump;
 
     public enum PlayerState
     {
@@ -32,14 +63,58 @@ public class PlayerManger : MonoBehaviour
     void Update()
     {
         horizontalInput = Input.GetAxisRaw("Horizontal");
+
+        HandleCoyoteTime();
+        HandleJumpBuffer();
+        HandleJumpCooldown();
         HandleInput();
         HandleMovement();
         UpdateState();
     }
 
+
+
+    void HandleCoyoteTime()
+    {
+        if (isGrounded)
+        {
+            coyoteTimeCounter = coyoteTime;
+        }
+        else
+        {
+            coyoteTimeCounter -= Time.deltaTime;
+        }
+    }
+
+    void HandleJumpBuffer()
+    {
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            jumpBufferCounter = jumpBufferTime;
+        }
+        else
+        {
+            jumpBufferCounter -= Time.deltaTime;
+        }
+    }
+
+    void HandleJumpCooldown()
+    {
+        if (jumpCooldownTimer > 0f)
+        {
+            jumpCooldownTimer -= Time.deltaTime;
+        }
+    }
+
     void HandleInput()
     {
-        if (Input.GetKeyDown(KeyCode.Space) && isGrounded && currentState != PlayerState.Jump)
+        // 只有在遊戲進行中才能控制
+        if (GameManager.Instance != null && !GameManager.Instance.IsGamePlaying())
+        {
+            return;
+        }
+
+        if (Input.GetKeyDown(KeyCode.Space) && (isGrounded || coyoteTimeCounter > 0f) && jumpCooldownTimer <= 0f)
         {
             Jump();
         }
@@ -47,6 +122,12 @@ public class PlayerManger : MonoBehaviour
 
     void HandleMovement()
     {
+        // 只有在遊戲進行中才能移動
+        if (GameManager.Instance != null && !GameManager.Instance.IsGamePlaying())
+        {
+            return;
+        }
+
         float moveX = horizontalInput * moveSpeed;
         rb.linearVelocity = new Vector2(moveX, rb.linearVelocity.y);
 
@@ -97,7 +178,7 @@ public class PlayerManger : MonoBehaviour
 
     void UpdateAnimation()
     {
-        if (animator == null || animator.runtimeAnimatorController == null) return;
+        if (animator == null) return;
 
         // 使用 Trigger 觸發狀態轉換
         switch (currentState)
@@ -118,14 +199,15 @@ public class PlayerManger : MonoBehaviour
     {
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
         currentState = PlayerState.Jump;
+        coyoteTimeCounter = 0f;
+        jumpCooldownTimer = jumpCooldown; // 啟動冷卻時間
 
-        // 立即更新動畫
         UpdateAnimation();
     }
 
     void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.gameObject.CompareTag("Ground"))
+        if (collision.gameObject.CompareTag(groundTag))
         {
             isGrounded = true;
         }
@@ -133,7 +215,7 @@ public class PlayerManger : MonoBehaviour
 
     void OnCollisionExit2D(Collision2D collision)
     {
-        if (collision.gameObject.CompareTag("Ground"))
+        if (collision.gameObject.CompareTag(groundTag))
         {
             isGrounded = false;
         }
