@@ -130,8 +130,10 @@ GameObject:
   - component: {fileID: 532347999}
   - component: {fileID: 532347998}
   - component: {fileID: 532347997}
+
   - component: {fileID: 532348000}
   - component: {fileID: 532348001}
+
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -213,6 +215,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+
 --- !u!114 &532348000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -303,6 +306,7 @@ MonoBehaviour:
   maxBounds: {x: 10, y: 10}
   predictMovement: 0
   predictionDistance: 2
+
 --- !u!1 &853154547
 GameObject:
   m_ObjectHideFlags: 0
@@ -318,6 +322,7 @@ GameObject:
   m_Layer: 0
   m_Name: Tilemap
   m_TagString: Ground
+
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -7197,6 +7202,7 @@ Tilemap:
     e31: 0
     e32: 0
     e33: 1
+
 --- !u!19719996 &853154551
 TilemapCollider2D:
   m_ObjectHideFlags: 0
@@ -7235,6 +7241,7 @@ TilemapCollider2D:
   m_MaximumTileChangeCount: 1000
   m_ExtrusionFactor: 0
   m_UseDelaunayMesh: 0
+
 --- !u!1 &1537824152
 GameObject:
   m_ObjectHideFlags: 0
@@ -7250,6 +7257,7 @@ GameObject:
   m_Layer: 0
   m_Name: Grid
   m_TagString: Ground
+
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -7282,6 +7290,7 @@ Transform:
   - {fileID: 853154548}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+
 --- !u!19719996 &1537824155
 TilemapCollider2D:
   m_ObjectHideFlags: 0
@@ -7615,10 +7624,12 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 532347999}
   - {fileID: 1537824154}
+
   - {fileID: 1722879133}
