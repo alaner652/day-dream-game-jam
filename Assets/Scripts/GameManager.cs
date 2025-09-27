@@ -86,6 +86,13 @@ public class GameManager : MonoBehaviour
                 ResumeGame();
             }
         }
+
+        // R 鍵完全重置遊戲
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            Debug.Log("按下 R 鍵，執行完全重置");
+            FullReset();
+        }
     }
 
     void CheckGameConditions()
@@ -168,6 +175,25 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log("退出遊戲");
         Application.Quit();
+    }
+
+    public void FullReset()
+    {
+        Debug.Log("執行完全重置...");
+
+        // 重置時間
+        Time.timeScale = 1f;
+
+        // 清除所有 PlayerPrefs (如果有用到)
+        PlayerPrefs.DeleteAll();
+
+        // 強制重置金幣系統
+        GameJam.CoinCollector.ResetCoins();
+
+        // 重新載入場景
+        UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+
+        Debug.Log("完全重置完成");
     }
 
     void ChangeGameState(GameState newState)

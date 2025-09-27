@@ -34,6 +34,8 @@ public class PlayerManger : MonoBehaviour
     public string deathTag = "DeathZone";
     [Tooltip("敵人標籤")]
     public string enemyTag = "Enemy";
+    [Tooltip("死亡後重新開始延遲時間")]
+    public float deathRestartDelay = 1f;
 
     private Rigidbody2D rb;
     private Animator animator;
@@ -252,7 +254,11 @@ public class PlayerManger : MonoBehaviour
         {
             isGrounded = true;
         }
-        else if (collision.gameObject.CompareTag(deathTag) || collision.gameObject.CompareTag(enemyTag))
+        else if (collision.gameObject.CompareTag(deathTag))
+        {
+            Die();
+        }
+        else if (!string.IsNullOrEmpty(enemyTag) && collision.gameObject.tag == enemyTag)
         {
             Die();
         }
@@ -268,7 +274,11 @@ public class PlayerManger : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag(deathTag) || other.CompareTag(enemyTag))
+        if (other.CompareTag(deathTag))
+        {
+            Die();
+        }
+        else if (!string.IsNullOrEmpty(enemyTag) && other.gameObject.tag == enemyTag)
         {
             Die();
         }
@@ -279,13 +289,31 @@ public class PlayerManger : MonoBehaviour
         if (isDead) return; // 避免重複死亡
 
         isDead = true;
-        Debug.Log("玩家死亡！");
+        Debug.Log("玩家死亡！使用完全重置...");
 
-        // 通知 GameManager
+        // 延遲後使用完全重置（像按 R 鍵一樣）
+        Invoke("DeathFullReset", deathRestartDelay);
+    }
+
+    void DeathFullReset()
+    {
         if (GameManager.Instance != null)
         {
-            GameManager.Instance.EndGame();
+            Debug.Log("死亡觸發完全重置");
+            GameManager.Instance.FullReset();
         }
+        else
+        {
+            // 如果沒有 GameManager，直接重新開始
+            ForceRestartGame();
+        }
+    }
+
+    void ForceRestartGame()
+    {
+        Debug.Log("強制重新載入場景...");
+        Time.timeScale = 1f;
+        UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
     }
 
     public bool IsDead()

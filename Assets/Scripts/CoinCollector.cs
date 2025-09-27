@@ -12,6 +12,10 @@ namespace GameJam
         public GameObject collectEffect;
         public TMP_Text coinText;
 
+        [Header("門解鎖設定")]
+        [Tooltip("需要收集多少金幣才能解鎖門")]
+        public static int coinsRequiredForDoor = 4;
+
         [Header("金幣動畫")]
         public bool animateBounce = true;
         public float bounceHeight = 0.5f;
@@ -30,9 +34,21 @@ namespace GameJam
         private bool isCollected = false;
 
         public static System.Action<int> OnCoinCollected;
+        public static System.Action OnAllCoinsCollected;
+
+        void Awake()
+        {
+            // 每次場景載入時都重置金幣（只有第一個金幣物件執行）
+            if (FindObjectsByType<CoinCollector>(FindObjectsSortMode.None).Length == 1)
+            {
+                ResetCoins();
+                Debug.Log("場景載入，金幣計數已重置為 0");
+            }
+        }
 
         void Start()
         {
+
             audioSource = GetComponent<AudioSource>();
             spriteRenderer = GetComponent<SpriteRenderer>();
             startPosition = transform.position;
@@ -52,7 +68,11 @@ namespace GameJam
                 {
                     Debug.LogWarning("找不到TMP_Text組件，請手動分配coinText");
                 }
-                coinText.text = " : " + totalCoins.ToString();
+            }
+
+            if (coinText != null)
+            {
+                coinText.text = " : " + totalCoins.ToString()   + "/" + coinsRequiredForDoor.ToString();
             }
         }
 
@@ -79,7 +99,7 @@ namespace GameJam
 
                 if (coinText != null)
                 {
-                    coinText.text = " : " + (totalCoins + coinValue).ToString();
+                     coinText.text = " : " + totalCoins.ToString()   + "/" + coinsRequiredForDoor.ToString();
                 }
                 else
                 {
@@ -99,10 +119,7 @@ namespace GameJam
             }
 
             // 生成收集特效
-            if (collectEffect != null)
-            {
-                Instantiate(collectEffect, transform.position, Quaternion.identity);
-            }
+            
 
             Vector3 originalScale = transform.localScale;
             Color originalColor = spriteRenderer.color;
@@ -131,9 +148,23 @@ namespace GameJam
         void CollectCoin()
         {
             totalCoins += coinValue;
-            Debug.Log($"收集金幣! 總數: {totalCoins}");
-            
+            Debug.Log($"收集金幣! 總數: {totalCoins}/{coinsRequiredForDoor}");
+             if (coinText != null)
+                {
+                     coinText.text = " : " + totalCoins.ToString()   + "/" + coinsRequiredForDoor.ToString();
+                }
+            if (collectEffect != null)
+            {
+                Instantiate(collectEffect, transform.position, Quaternion.identity);
+            }
             OnCoinCollected?.Invoke(totalCoins);
+
+            // 檢查是否收集完所有需要的金幣
+            if (totalCoins >= coinsRequiredForDoor)
+            {
+                Debug.Log("所有金幣收集完畢！門已解鎖！");
+                OnAllCoinsCollected?.Invoke();
+            }
 
             if (collectSound != null && audioSource != null)
             {
@@ -144,7 +175,7 @@ namespace GameJam
             {
                 Instantiate(collectEffect, transform.position, Quaternion.identity);
             }
-            
+
             Destroy(gameObject);
         }
 
@@ -156,6 +187,31 @@ namespace GameJam
         public static void ResetCoins()
         {
             totalCoins = 0;
+
+            // 清除事件監聽器，避免重複綁定
+            OnCoinCollected = null;
+            OnAllCoinsCollected = null;
+
+            Debug.Log($"金幣計數已重置：{totalCoins}/{coinsRequiredForDoor}");
+        }
+
+        public static bool HasAllCoins()
+        {
+            return totalCoins >= coinsRequiredForDoor;
+        }
+
+        public static int GetCoinsRequired()
+        {
+            return coinsRequiredForDoor;
+        }
+
+        public static void ForceFullReset()
+        {
+            totalCoins = 0;
+            OnCoinCollected = null;
+            OnAllCoinsCollected = null;
+
+            Debug.Log("CoinCollector 強制完全重置完成");
         }
     }
 }

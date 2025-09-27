@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 
 public class GameTimer : MonoBehaviour
@@ -7,11 +8,13 @@ public class GameTimer : MonoBehaviour
     public float gameTime = 600f; // 10分鐘 = 600秒
 
     private float currentGameTime;
+    public TMP_Text timerText; // 參考 UI Text 元件
     private bool gameEnded = false;
 
     void Start()
     {
         currentGameTime = gameTime;
+        
     }
 
     void Update()
@@ -24,11 +27,11 @@ public class GameTimer : MonoBehaviour
         if (!gameEnded && currentGameTime > 0)
         {
             currentGameTime -= Time.deltaTime;
-
+            
             int minutes = Mathf.FloorToInt(currentGameTime / 60f);
             int seconds = Mathf.FloorToInt(currentGameTime % 60f);
-
-            Debug.Log($"遊戲時間: {minutes:00}:{seconds:00}");
+            timerText.text = $"{minutes:00}:{seconds:00}";
+            //Debug.Log($"遊戲時間: {minutes:00}:{seconds:00}");
 
             if (currentGameTime <= 0)
             {
@@ -46,6 +49,7 @@ public class GameTimer : MonoBehaviour
         // 通知 GameManager 遊戲結束
         if (GameManager.Instance != null)
         {
+            timerText.text = "Time Out!";
             GameManager.Instance.EndGame();
         }
         else
