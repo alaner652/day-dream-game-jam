@@ -37,8 +37,14 @@ public class PlayerManger : MonoBehaviour
     [Tooltip("死亡後重新開始延遲時間")]
     public float deathRestartDelay = 1f;
 
+    [Header("音效設定")]
+    [Tooltip("跳躍音效")]
+    public AudioClip jumpSound;
+
     private Rigidbody2D rb;
     private Animator animator;
+    private AudioSource audioSource;
+
     private bool isGrounded;
     private bool wasGrounded;
     private float horizontalInput;
@@ -68,6 +74,11 @@ public class PlayerManger : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
         rb.freezeRotation = true;
 
         // 確保初始狀態正確
@@ -244,6 +255,12 @@ public class PlayerManger : MonoBehaviour
         currentState = PlayerState.Jump;
         coyoteTimeCounter = 0f;
         jumpCooldownTimer = jumpCooldown; // 啟動冷卻時間
+
+        // 播放跳躍音效
+        if (audioSource != null && jumpSound != null)
+        {
+            audioSource.PlayOneShot(jumpSound);
+        }
 
         UpdateAnimation();
     }

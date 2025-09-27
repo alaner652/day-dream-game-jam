@@ -1,3 +1,4 @@
+using GameJam;
 using TMPro;
 using UnityEngine;
 
@@ -5,18 +6,26 @@ public class GameTimer : MonoBehaviour
 {
     [Header("遊戲計時器設定")]
     [Tooltip("遊戲總時間（秒）")]
-    public float gameTime = 600f; // 10分鐘 = 600秒
+    public float gameTime = 300f; // 10分鐘 = 600秒
 
     private float currentGameTime;
     public TMP_Text timerText; // 參考 UI Text 元件
     private bool gameEnded = false;
 
+  
+
     void Start()
     {
         currentGameTime = gameTime;
+        CoinCollector.OnCoinTrigger += UpTime;
         
     }
 
+
+    void UpTime()
+    {
+        currentGameTime += 60f; // 每次觸發增加10秒
+    }
     void Update()
     {
         HandleGameTimer();
@@ -28,9 +37,8 @@ public class GameTimer : MonoBehaviour
         {
             currentGameTime -= Time.deltaTime;
             
-            int minutes = Mathf.FloorToInt(currentGameTime / 60f);
-            int seconds = Mathf.FloorToInt(currentGameTime % 60f);
-            timerText.text = $"{minutes:00}:{seconds:00}";
+           
+            timerText.text = GetFormattedTime();
             //Debug.Log($"遊戲時間: {minutes:00}:{seconds:00}");
 
             if (currentGameTime <= 0)

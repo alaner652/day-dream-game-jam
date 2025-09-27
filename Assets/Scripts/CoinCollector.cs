@@ -9,12 +9,14 @@ namespace GameJam
         [Header("金幣收集設定")]
         public int coinValue = 1;
         public AudioClip collectSound;
+            private AudioSource audioSource;
         public GameObject collectEffect;
         public TMP_Text coinText;
 
         [Header("門解鎖設定")]
         [Tooltip("需要收集多少金幣才能解鎖門")]
         public static int coinsRequiredForDoor = 10;
+  public static System.Action OnCoinTrigger;
 
         [Header("金幣動畫")]
         public bool animateBounce = true;
@@ -27,7 +29,7 @@ namespace GameJam
         public AnimationCurve fadeCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
 
 
-        private AudioSource audioSource;
+       
         private Vector3 startPosition;
         private static int totalCoins = 0;
         private SpriteRenderer spriteRenderer;
@@ -69,10 +71,14 @@ namespace GameJam
                     Debug.LogWarning("找不到TMP_Text組件，請手動分配coinText");
                 }
             }
+             if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
 
             if (coinText != null)
             {
-                coinText.text = " : " + totalCoins.ToString()   + "/" + coinsRequiredForDoor.ToString();
+                coinText.text = " : " + totalCoins.ToString() + "/" + coinsRequiredForDoor.ToString();
             }
         }
 
@@ -148,6 +154,7 @@ namespace GameJam
         void CollectCoin()
         {
             totalCoins += coinValue;
+            OnCoinTrigger?.Invoke();
             Debug.Log($"收集金幣! 總數: {totalCoins}/{coinsRequiredForDoor}");
              if (coinText != null)
                 {
