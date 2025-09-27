@@ -1,20 +1,45 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI; // 如果要連 UI
 
 public class GameManager : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    public TextMeshPro CoinText;
+    public static GameManager Instance; // Singleton
 
-    
-    void Start()
+    public int score = 0;
+    public TMP_Text scoreText; // 指向 UI Text（或 TMP_Text）
+
+    private void Awake()
     {
-        
+        // 保證唯一實例
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject); // 切場景不會消失
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
-    // Update is called once per frame
-    void Update()
+    public void AddScore(int value)
     {
-        
+        score += value;
+        UpdateUI();
+    }
+
+    public void ResetScore()
+    {
+        score = 0;
+        UpdateUI();
+    }
+
+    void UpdateUI()
+    {
+        if (scoreText != null)
+        {
+            scoreText.text = " : " + score.ToString();
+        }
     }
 }
