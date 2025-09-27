@@ -16,7 +16,7 @@ public class ExitDoor : MonoBehaviour
     [Header("勝利設定")]
     [Tooltip("通過門時是否觸發勝利")]
     public bool triggerVictory = true;
-
+    
     private bool isUnlocked = false;
     private SpriteRenderer spriteRenderer;
     private Collider2D doorCollider;
@@ -37,6 +37,7 @@ public class ExitDoor : MonoBehaviour
             // 監聽金幣收集事件
             CoinCollector.OnAllCoinsCollected += OnAllCoinsCollected;
         }
+    
     }
 
     void OnDestroy()
@@ -71,6 +72,7 @@ public class ExitDoor : MonoBehaviour
 
     void UnlockDoor()
     {
+        
         isUnlocked = true;
 
         // 設定門為開啟狀態
@@ -98,6 +100,8 @@ public class ExitDoor : MonoBehaviour
             PlayerPassedThrough();
         }
     }
+
+    
 
     void OnCollisionEnter2D(Collision2D collision)
     {

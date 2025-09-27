@@ -14,7 +14,7 @@ namespace GameJam
 
         [Header("門解鎖設定")]
         [Tooltip("需要收集多少金幣才能解鎖門")]
-        public static int coinsRequiredForDoor = 4;
+        public static int coinsRequiredForDoor = 10;
 
         [Header("金幣動畫")]
         public bool animateBounce = true;

@@ -1,9 +1,17 @@
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
     [Header("遊戲狀態設定")]
     public GameState currentGameState = GameState.Playing;
+    public Canvas DoneCanvas;
+    public TMP_Text doneText;
+    
+
+
+    public Button restartButton;
 
     [Header("遊戲設定")]
     public bool pauseOnTimeUp = true;
@@ -27,6 +35,8 @@ public class GameManager : MonoBehaviour
 
     private GameTimer gameTimer;
     private PlayerManger player;
+
+    
 
     public enum GameState
     {
@@ -55,8 +65,8 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         // 找到其他組件
-        gameTimer = FindObjectOfType<GameTimer>();
-        player = FindObjectOfType<PlayerManger>();
+        gameTimer = FindFirstObjectByType<GameTimer>();
+        player = FindFirstObjectByType<PlayerManger>();
 
         // 確保遊戲狀態正確初始化
         currentGameState = GameState.Playing;
@@ -122,6 +132,7 @@ public class GameManager : MonoBehaviour
             Debug.Log("遊戲暫停");
         }
     }
+  
 
     public void ResumeGame()
     {
@@ -139,7 +150,9 @@ public class GameManager : MonoBehaviour
         ChangeGameState(GameState.GameOver);
         OnGameEnded?.Invoke();
         Debug.Log("遊戲結束！");
-
+        DoneCanvas.gameObject.SetActive(true);
+        doneText.text = "Game Over!";
+        restartButton.onClick.AddListener(RestartGame);
         // 檢查是否自動重新開始
         if (autoRestartOnDeath)
         {
@@ -157,6 +170,9 @@ public class GameManager : MonoBehaviour
         ChangeGameState(GameState.Victory);
         Time.timeScale = 0f;
         Debug.Log("勝利！");
+        DoneCanvas.gameObject.SetActive(true);
+        doneText.text = "Congraduelations ! You Win!";
+        restartButton.onClick.AddListener(RestartGame);
     }
 
     public void RestartGame()
