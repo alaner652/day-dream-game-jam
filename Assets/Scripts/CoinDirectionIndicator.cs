@@ -1,7 +1,6 @@
 using UnityEngine;
 using TMPro;
 using GameJam;
-using UnityEngine.Audio;
 
 public class CoinDirectionIndicator : MonoBehaviour
 {
@@ -27,11 +26,18 @@ public class CoinDirectionIndicator : MonoBehaviour
             audioSource = gameObject.AddComponent<AudioSource>();
         }
 
+        // 設定音量
+        audioSource.volume = 1.0f;
+
         // 自動尋找玩家
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj == null)
         {
-            playerObj = FindFirstObjectByType<PlayerManger>()?.gameObject;
+            PlayerManger playerManager = FindFirstObjectByType<PlayerManger>();
+            if (playerManager != null)
+            {
+                playerObj = playerManager.gameObject;
+            }
         }
 
         if (playerObj != null)

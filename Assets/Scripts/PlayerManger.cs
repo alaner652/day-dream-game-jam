@@ -2,6 +2,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Animator))]
+[RequireComponent(typeof(AudioSource))]
 public class PlayerManger : MonoBehaviour
 {
     [Header("移動設定")]
@@ -35,28 +36,24 @@ public class PlayerManger : MonoBehaviour
     [Tooltip("敵人標籤")]
     public string enemyTag = "Enemy";
     [Tooltip("死亡後重新開始延遲時間")]
-    public float deathRestartDelay = 1f;
+    public float deathRestartDelay = 5f;
 
     [Header("音效設定")]
     [Tooltip("跳躍音效")]
     public AudioClip jumpSound;
+    [Tooltip("死亡音效")]
+    public AudioClip deathSound;
 
     private Rigidbody2D rb;
     private Animator animator;
     private AudioSource audioSource;
 
     private bool isGrounded;
-    private bool wasGrounded;
     private float horizontalInput;
 
     private float coyoteTimeCounter;
-    private float jumpBufferCounter;
     private float jumpCooldownTimer;
 
-    private bool isTouchingWallLeft;
-    private bool isTouchingWallRight;
-    private int wallJumpCount;
-    private bool canWallJump;
 
     private bool isDead = false;
 
@@ -79,6 +76,10 @@ public class PlayerManger : MonoBehaviour
         {
             audioSource = gameObject.AddComponent<AudioSource>();
         }
+
+        // 設定音量
+        audioSource.volume = 1.0f;
+
         rb.freezeRotation = true;
 
         // 確保初始狀態正確
@@ -88,7 +89,6 @@ public class PlayerManger : MonoBehaviour
 
         // 重置計時器
         coyoteTimeCounter = 0f;
-        jumpBufferCounter = 0f;
         jumpCooldownTimer = 0f;
     }
 
@@ -97,7 +97,6 @@ public class PlayerManger : MonoBehaviour
         horizontalInput = Input.GetAxisRaw("Horizontal");
 
         HandleCoyoteTime();
-        HandleJumpBuffer();
         HandleJumpCooldown();
         HandleInput();
         HandleMovement();
@@ -116,17 +115,6 @@ public class PlayerManger : MonoBehaviour
         }
     }
 
-    void HandleJumpBuffer()
-    {
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            jumpBufferCounter = jumpBufferTime;
-        }
-        else
-        {
-            jumpBufferCounter -= Time.deltaTime;
-        }
-    }
 
     void HandleJumpCooldown()
     {
@@ -259,6 +247,7 @@ public class PlayerManger : MonoBehaviour
         // 播放跳躍音效
         if (audioSource != null && jumpSound != null)
         {
+            audioSource.volume = 1.0f;  // 跳躍音效正常音量
             audioSource.PlayOneShot(jumpSound);
         }
 
@@ -275,7 +264,7 @@ public class PlayerManger : MonoBehaviour
         {
             Die();
         }
-        else if (!string.IsNullOrEmpty(enemyTag) && collision.gameObject.tag == enemyTag)
+        else if (!string.IsNullOrEmpty(enemyTag) && collision.gameObject.CompareTag(enemyTag))
         {
             Die();
         }
@@ -295,7 +284,7 @@ public class PlayerManger : MonoBehaviour
         {
             Die();
         }
-        else if (!string.IsNullOrEmpty(enemyTag) && other.gameObject.tag == enemyTag)
+        else if (!string.IsNullOrEmpty(enemyTag) && other.gameObject.CompareTag(enemyTag))
         {
             Die();
         }
@@ -308,8 +297,22 @@ public class PlayerManger : MonoBehaviour
         isDead = true;
         Debug.Log("玩家死亡！使用完全重置...");
 
+        // 播放死亡音效
+        float actualDelay = deathRestartDelay;
+        if (audioSource != null && deathSound != null)
+        {
+            audioSource.Stop();
+            audioSource.volume = 5f;  // 死亡音效特別大聲
+            audioSource.PlayOneShot(deathSound, 5f);  // 使用 PlayOneShot 並指定音量
+
+            // 確保延遲時間至少等於音效長度
+            float soundLength = deathSound.length;
+            actualDelay = Mathf.Max(deathRestartDelay, soundLength + 0.5f);
+            Debug.Log($"死亡音效長度: {soundLength}秒, 延遲時間: {actualDelay}秒");
+        }
+
         // 延遲後使用完全重置（像按 R 鍵一樣）
-        Invoke("DeathFullReset", deathRestartDelay);
+        Invoke(nameof(DeathFullReset), actualDelay);
     }
 
     void DeathFullReset()
