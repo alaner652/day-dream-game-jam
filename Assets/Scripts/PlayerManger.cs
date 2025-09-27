@@ -2,7 +2,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Animator))]
-public class Movement : MonoBehaviour
+public class PlayerManger : MonoBehaviour
 {
     [Header("移動設定")]
     public float moveSpeed = 5f;
@@ -97,7 +97,7 @@ public class Movement : MonoBehaviour
 
     void UpdateAnimation()
     {
-        if (animator == null) return;
+        if (animator == null || animator.runtimeAnimatorController == null) return;
 
         // 使用 Trigger 觸發狀態轉換
         switch (currentState)
