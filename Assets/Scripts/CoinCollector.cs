@@ -156,14 +156,26 @@ namespace GameJam
             totalCoins += coinValue;
             OnCoinTrigger?.Invoke();
             Debug.Log($"收集金幣! 總數: {totalCoins}/{coinsRequiredForDoor}");
-             if (coinText != null)
-                {
-                     coinText.text = " : " + totalCoins.ToString()   + "/" + coinsRequiredForDoor.ToString();
-                }
+
+            // 更新UI文字
+            if (coinText != null)
+            {
+                coinText.text = " : " + totalCoins.ToString() + "/" + coinsRequiredForDoor.ToString();
+            }
+
+            // 播放音效
+            if (collectSound != null && audioSource != null)
+            {
+                audioSource.PlayOneShot(collectSound);
+            }
+
+            // 生成特效
             if (collectEffect != null)
             {
                 Instantiate(collectEffect, transform.position, Quaternion.identity);
             }
+
+            // 觸發事件
             OnCoinCollected?.Invoke(totalCoins);
 
             // 檢查是否收集完所有需要的金幣
@@ -171,16 +183,6 @@ namespace GameJam
             {
                 Debug.Log("所有金幣收集完畢！門已解鎖！");
                 OnAllCoinsCollected?.Invoke();
-            }
-
-            if (collectSound != null && audioSource != null)
-            {
-                audioSource.PlayOneShot(collectSound);
-            }
-
-            if (collectEffect != null)
-            {
-                Instantiate(collectEffect, transform.position, Quaternion.identity);
             }
 
             Destroy(gameObject);

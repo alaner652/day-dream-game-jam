@@ -14,10 +14,8 @@ public class GameManager : MonoBehaviour
     public Button restartButton;
 
     [Header("遊戲設定")]
-    public bool pauseOnTimeUp = true;
     public bool allowPause = true;
-    public bool autoRestartOnDeath = true;
-    [Tooltip("死亡後自動重新開始的延遲時間")]
+    [Tooltip("遊戲結束後的延遲時間")]
     public float deathRestartDelay = 1f;
 
     // 單例模式
@@ -150,41 +148,50 @@ public class GameManager : MonoBehaviour
         ChangeGameState(GameState.GameOver);
         OnGameEnded?.Invoke();
         Debug.Log("遊戲結束！");
+
+        // 顯示UI
         DoneCanvas.gameObject.SetActive(true);
         doneText.text = "Game Over!";
+
+        // 清除舊的監聽器，避免重複添加
+        restartButton.onClick.RemoveAllListeners();
         restartButton.onClick.AddListener(RestartGame);
-        // 檢查是否自動重新開始
-        if (autoRestartOnDeath)
-        {
-            Debug.Log($"將在 {deathRestartDelay} 秒後自動重新開始...");
-            Invoke("RestartGame", deathRestartDelay);
-        }
-        else if (pauseOnTimeUp)
-        {
-            Time.timeScale = 0f;
-        }
+
+        // 暫停遊戲，等待玩家點擊重新開始
+        Time.timeScale = 0f;
+        Debug.Log("遊戲結束，等待玩家點擊重新開始按鈕");
     }
 
     public void Victory()
     {
         ChangeGameState(GameState.Victory);
-        Time.timeScale = 0f;
         Debug.Log("勝利！");
+
+        // 顯示UI
         DoneCanvas.gameObject.SetActive(true);
-        doneText.text = "Congraduelations ! You Win!";
+        doneText.text = "Congratulations! You Win!";
+
+        // 清除舊的監聽器，避免重複添加
+        restartButton.onClick.RemoveAllListeners();
         restartButton.onClick.AddListener(RestartGame);
+
+        // 暫停遊戲，等待玩家點擊重新開始
+        Time.timeScale = 0f;
+        Debug.Log("通關完成，等待玩家點擊重新開始按鈕");
     }
 
     public void RestartGame()
     {
-        Debug.Log("重新載入場景...");
+        Debug.Log("Play Again - 執行完全重置...");
+
+        // 恢復時間
         Time.timeScale = 1f;
 
         // 取消所有延遲調用
         CancelInvoke();
 
-        // 重新載入當前場景
-        UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+        // 執行完全重置
+        FullReset();
     }
 
     public void QuitGame()
@@ -200,16 +207,32 @@ public class GameManager : MonoBehaviour
         // 重置時間
         Time.timeScale = 1f;
 
+        // 取消所有延遲調用
+        CancelInvoke();
+
         // 清除所有 PlayerPrefs (如果有用到)
         PlayerPrefs.DeleteAll();
 
-        // 強制重置金幣系統
-        GameJam.CoinCollector.ResetCoins();
+        // 重置所有靜態變數和系統
+        GameJam.CoinCollector.ForceFullReset();
+
+        // 清除事件監聽器
+        OnGameStateChanged = null;
+        OnGameStarted = null;
+        OnGamePaused = null;
+        OnGameResumed = null;
+        OnGameEnded = null;
+
+        // 隱藏UI
+        if (DoneCanvas != null)
+        {
+            DoneCanvas.gameObject.SetActive(false);
+        }
+
+        Debug.Log("完全重置完成，重新載入場景...");
 
         // 重新載入場景
         UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
-
-        Debug.Log("完全重置完成");
     }
 
     void ChangeGameState(GameState newState)

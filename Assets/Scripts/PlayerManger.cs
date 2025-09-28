@@ -82,6 +82,16 @@ public class PlayerManger : MonoBehaviour
 
         rb.freezeRotation = true;
 
+        // 修正 Tilemap 碰撞問題
+        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+        rb.sleepMode = RigidbodySleepMode2D.NeverSleep;
+
+        // 更激進的設定
+        rb.gravityScale = 3f;   // 增加重力讓墜落更快
+        rb.linearDamping = 0f;  // 移除線性阻尼
+        rb.angularDamping = 0f; // 移除角度阻尼
+        rb.interpolation = RigidbodyInterpolation2D.Interpolate;
+
         // 確保初始狀態正確
         isDead = false;
         currentState = PlayerState.Idle;
@@ -94,7 +104,17 @@ public class PlayerManger : MonoBehaviour
 
     void Update()
     {
-        horizontalInput = Input.GetAxisRaw("Horizontal");
+        // 雙重檢測確保輸入穩定
+        float axisInput = Input.GetAxisRaw("Horizontal");
+        float keyInput = 0f;
+
+        if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow))
+            keyInput = -1f;
+        else if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow))
+            keyInput = 1f;
+
+        // 優先使用按鍵檢測，軸輸入作為備用
+        horizontalInput = keyInput != 0f ? keyInput : axisInput;
 
         HandleCoyoteTime();
         HandleJumpCooldown();
@@ -132,12 +152,15 @@ public class PlayerManger : MonoBehaviour
             return;
         }
 
-        // 只有在遊戲進行中才能控制
-        if (GameManager.Instance != null && !GameManager.Instance.IsGamePlaying())
+        // 檢查遊戲狀態（如果 GameManager 存在的話）
+        bool gameIsPlaying = GameManager.Instance == null || GameManager.Instance.IsGamePlaying();
+
+        if (!gameIsPlaying)
         {
             return;
         }
 
+        // 跳躍輸入處理
         if (Input.GetKeyDown(KeyCode.Space) && (isGrounded || coyoteTimeCounter > 0f) && jumpCooldownTimer <= 0f)
         {
             Jump();
@@ -153,19 +176,47 @@ public class PlayerManger : MonoBehaviour
             return;
         }
 
-        // 只有在遊戲進行中才能移動
-        if (GameManager.Instance != null && !GameManager.Instance.IsGamePlaying())
+        // 檢查遊戲狀態（如果 GameManager 存在的話）
+        bool gameIsPlaying = GameManager.Instance == null || GameManager.Instance.IsGamePlaying();
+
+        if (!gameIsPlaying)
         {
+            rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
             return;
         }
 
-        float moveX = horizontalInput * moveSpeed;
-        rb.linearVelocity = new Vector2(moveX, rb.linearVelocity.y);
+        // 強制移動 - 專門解決 Tilemap 卡住問題
+        float targetVelocityX = horizontalInput * moveSpeed;
+
+        // 檢測是否卡住（有輸入但速度為0）
+        bool isStuck = Mathf.Abs(horizontalInput) > 0.1f && Mathf.Abs(rb.linearVelocity.x) < 0.1f;
+
+        if (isStuck)
+        {
+            // 如果卡住，嘗試小幅移動角色位置
+            Vector3 pushDirection = new(horizontalInput * 0.01f, 0, 0);
+            transform.position += pushDirection;
+
+            // 然後重新設定速度
+            rb.linearVelocity = new Vector2(targetVelocityX, rb.linearVelocity.y);
+
+            Debug.Log($"檢測到卡住，強制推動: {pushDirection}");
+        }
+        else if (Mathf.Abs(horizontalInput) > 0.1f)
+        {
+            // 正常移動
+            rb.linearVelocity = new Vector2(targetVelocityX, rb.linearVelocity.y);
+        }
+        else
+        {
+            // 停止移動，但保持 Y 速度不變（重力）
+            rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+        }
 
         // 角色翻轉
-        if (horizontalInput > 0)
+        if (horizontalInput > 0.1f)
             transform.localScale = new Vector3(1, 1, 1);
-        else if (horizontalInput < 0)
+        else if (horizontalInput < -0.1f)
             transform.localScale = new Vector3(-1, 1, 1);
     }
 
@@ -311,41 +362,30 @@ public class PlayerManger : MonoBehaviour
             Debug.Log($"死亡音效長度: {soundLength}秒, 延遲時間: {actualDelay}秒");
         }
 
-        // 延遲後使用完全重置（像按 R 鍵一樣）
-        Invoke(nameof(DeathFullReset), actualDelay);
+        // 延遲後觸發遊戲結束UI
+        Invoke(nameof(DeathGameOver), actualDelay);
     }
 
-    void DeathFullReset()
+    void DeathGameOver()
     {
         if (GameManager.Instance != null)
         {
-            Debug.Log("死亡觸發完全重置");
-            GameManager.Instance.FullReset();
+            Debug.Log("死亡觸發遊戲結束UI");
+            GameManager.Instance.EndGame();
         }
         else
         {
-            // 如果沒有 GameManager，直接重新開始
-            ForceRestartGame();
+            // 如果沒有 GameManager，直接重新載入場景
+            Debug.Log("沒有 GameManager，直接重新載入場景...");
+            Time.timeScale = 1f;
+            UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
         }
     }
 
-    void ForceRestartGame()
-    {
-        Debug.Log("強制重新載入場景...");
-        Time.timeScale = 1f;
-        UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
-    }
 
     public bool IsDead()
     {
         return isDead;
-    }
-
-    public void Respawn()
-    {
-        isDead = false;
-        currentState = PlayerState.Idle;
-        Debug.Log("玩家重生！");
     }
 
 }

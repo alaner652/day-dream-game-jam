@@ -24,7 +24,8 @@ public class GameTimer : MonoBehaviour
 
     void UpTime()
     {
-        currentGameTime += 60f; // 每次觸發增加10秒
+        currentGameTime += 15f; // 每次觸發增加15秒
+        Debug.Log($"收集金幣！時間增加15秒，剩餘時間: {GetFormattedTime()}");
     }
     void Update()
     {
