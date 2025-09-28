@@ -9,8 +9,14 @@ namespace GameJam
         [Header("金幣收集設定")]
         public int coinValue = 1;
         public AudioClip collectSound;
+            private AudioSource audioSource;
         public GameObject collectEffect;
         public TMP_Text coinText;
+
+        [Header("門解鎖設定")]
+        [Tooltip("需要收集多少金幣才能解鎖門")]
+        public static int coinsRequiredForDoor = 10;
+  public static System.Action OnCoinTrigger;
 
         [Header("金幣動畫")]
         public bool animateBounce = true;
@@ -23,16 +29,28 @@ namespace GameJam
         public AnimationCurve fadeCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
 
 
-        private AudioSource audioSource;
+       
         private Vector3 startPosition;
         private static int totalCoins = 0;
         private SpriteRenderer spriteRenderer;
         private bool isCollected = false;
 
         public static System.Action<int> OnCoinCollected;
+        public static System.Action OnAllCoinsCollected;
+
+        void Awake()
+        {
+            // 每次場景載入時都重置金幣（只有第一個金幣物件執行）
+            if (FindObjectsByType<CoinCollector>(FindObjectsSortMode.None).Length == 1)
+            {
+                ResetCoins();
+                Debug.Log("場景載入，金幣計數已重置為 0");
+            }
+        }
 
         void Start()
         {
+
             audioSource = GetComponent<AudioSource>();
             spriteRenderer = GetComponent<SpriteRenderer>();
             startPosition = transform.position;
@@ -52,7 +70,15 @@ namespace GameJam
                 {
                     Debug.LogWarning("找不到TMP_Text組件，請手動分配coinText");
                 }
-                coinText.text = " : " + totalCoins.ToString();
+            }
+             if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
+
+            if (coinText != null)
+            {
+                coinText.text = " : " + totalCoins.ToString() + "/" + coinsRequiredForDoor.ToString();
             }
         }
 
@@ -79,7 +105,7 @@ namespace GameJam
 
                 if (coinText != null)
                 {
-                    coinText.text = " : " + (totalCoins + coinValue).ToString();
+                     coinText.text = " : " + totalCoins.ToString()   + "/" + coinsRequiredForDoor.ToString();
                 }
                 else
                 {
@@ -99,10 +125,7 @@ namespace GameJam
             }
 
             // 生成收集特效
-            if (collectEffect != null)
-            {
-                Instantiate(collectEffect, transform.position, Quaternion.identity);
-            }
+            
 
             Vector3 originalScale = transform.localScale;
             Color originalColor = spriteRenderer.color;
@@ -131,20 +154,37 @@ namespace GameJam
         void CollectCoin()
         {
             totalCoins += coinValue;
-            Debug.Log($"收集金幣! 總數: {totalCoins}");
-            
-            OnCoinCollected?.Invoke(totalCoins);
+            OnCoinTrigger?.Invoke();
+            Debug.Log($"收集金幣! 總數: {totalCoins}/{coinsRequiredForDoor}");
 
+            // 更新UI文字
+            if (coinText != null)
+            {
+                coinText.text = " : " + totalCoins.ToString() + "/" + coinsRequiredForDoor.ToString();
+            }
+
+            // 播放音效
             if (collectSound != null && audioSource != null)
             {
                 audioSource.PlayOneShot(collectSound);
             }
 
+            // 生成特效
             if (collectEffect != null)
             {
                 Instantiate(collectEffect, transform.position, Quaternion.identity);
             }
-            
+
+            // 觸發事件
+            OnCoinCollected?.Invoke(totalCoins);
+
+            // 檢查是否收集完所有需要的金幣
+            if (totalCoins >= coinsRequiredForDoor)
+            {
+                Debug.Log("所有金幣收集完畢！門已解鎖！");
+                OnAllCoinsCollected?.Invoke();
+            }
+
             Destroy(gameObject);
         }
 
@@ -156,6 +196,31 @@ namespace GameJam
         public static void ResetCoins()
         {
             totalCoins = 0;
+
+            // 清除事件監聽器，避免重複綁定
+            OnCoinCollected = null;
+            OnAllCoinsCollected = null;
+
+            Debug.Log($"金幣計數已重置：{totalCoins}/{coinsRequiredForDoor}");
+        }
+
+        public static bool HasAllCoins()
+        {
+            return totalCoins >= coinsRequiredForDoor;
+        }
+
+        public static int GetCoinsRequired()
+        {
+            return coinsRequiredForDoor;
+        }
+
+        public static void ForceFullReset()
+        {
+            totalCoins = 0;
+            OnCoinCollected = null;
+            OnAllCoinsCollected = null;
+
+            Debug.Log("CoinCollector 強制完全重置完成");
         }
     }
 }
